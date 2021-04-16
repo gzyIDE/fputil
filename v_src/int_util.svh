@@ -10,75 +10,91 @@
 `ifndef _INT_UTIL_SVH_INCLUDED_
 `define _INT_UTIL_SVH_INCLUDED_
 
-`include "stddef.svh"
 `include "type.svh"
 
 virtual class IntUtils #(
 	parameter dconf_t CONF = `DEF_DCONF_INT,
+	parameter actf_t ACT = `DEF_ACT,
 	parameter string ATTR = "in",	// direction
 	parameter DISP = `Enable		// print decoded result
 );
 
-	/***** internal parameter *****/
+	//***** internal parameter
 	localparam SIGN = CONF.sign;
 	localparam PREC = CONF.prec;
 	localparam FRAC = CONF.frac;
 
-	task set;
-		input [PREC-1:0]		in;
-		output [PREC-1:0]		dst;
-		begin
-			dst = in;
-		end
+
+
+	//***** set integer value
+	task set (
+		input [PREC-1:0]		in,
+		output [PREC-1:0]		dst
+	);
+
+		dst = in;
 	endtask
 
-	task set_random;
-		output [PREC-1:0]		dst;
-		begin
-			dst = $random;
-		end
+
+
+	//***** set random value
+	static task set_random (
+		output [PREC-1:0]		dst
+	);
+
+		dst = $random;
 	endtask
 
-	function int decode;
-		input [PREC-1:0]		in;
+
+
+	//***** return value with maximum absolute value
+	static function [PREC-1:0] get_max (
+		input			sign
+	);
+
+		if ( SIGN ) begin
+			if ( sign ) begin
+				get_max = {1'b1, {PREC-1{1'b0}}};
+			end else begin
+				get_max = {1'b0, {PREC-1{1'b1}}};
+			end
+		end else begin
+			get_max = {PREC{1'b1}};
+		end
+	endfunction
+
+
+
+	//***** decode integer
+	static function int decode (
+		input [PREC-1:0]		in
+	);
 		reg	 signed [PREC-1:0]	in_s;
-		begin
-			in_s = in;
-			if ( SIGN ) begin
-				if ( in[PREC-1] ) begin
-					decode = in_s;
-				end else begin
-					decode = in;
-				end
+
+		in_s = in;
+		if ( SIGN ) begin
+			if ( in[PREC-1] ) begin
+				decode = in_s;
 			end else begin
 				decode = in;
 			end
+		end else begin
+			decode = in;
 		end
 	endfunction
 
-	function [PREC-1:0] get_max;
-		input			sign;
-		begin
-			if ( SIGN ) begin
-				if ( sign ) begin
-					get_max = {1'b1, {PREC-1{1'b0}}};
-				end else begin
-					get_max = {1'b0, {PREC-1{1'b1}}};
-				end
-			end else begin
-				get_max = {PREC{1'b1}};
-			end
-		end
-	endfunction
 
-	function check_max;
-		input [PREC-1:0]		in;
+
+	//***** check if given value is maximum of the type
+	static function check_max (
+		input [PREC-1:0]		in
+	);
+
 		bit [PREC-1:0]			max;
-		begin
-			max = this.get_max(in[PREC-1]);
-			check_max = ( in == max );
-		end
+		max = get_max(in[PREC-1]);
+		check_max = ( in == max );
 	endfunction
+
 endclass
 
 
@@ -169,4 +185,4 @@ class IntCalc #(
 
 endclass
 
-`endif // _FXP_UTIL_SVH_INCLUDED_
+`endif // _INT_UTIL_SVH_INCLUDED_
